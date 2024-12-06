@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { login, refreshToken } = require('../controllers/authController');
+const { validateLoginInput, handleValidation } = require('../middlewares/validationMiddleware');
 
-// Route untuk login
-router.post('/login', login);
+// Login route
+router.post('/login', validateLoginInput, handleValidation, login);
 
-// Route untuk refresh token
+// Refresh token route
 router.post('/refresh-token', refreshToken);
 
 module.exports = router;

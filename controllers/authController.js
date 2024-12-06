@@ -1,49 +1,48 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Op } = require('sequelize'); // Import Op dari Sequelize
 const User = require('../models/User');
 
-// Fungsi untuk membuat refresh token
 const createRefreshToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' }); // Refresh token berlaku 7 hari
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
 exports.login = async (req, res) => {
-  const { login, password } = req.body;
+  const { email, password } = req.body;
 
   try {
-    // Cari user berdasarkan email atau nim
-    const user = await User.findOne({
-      where: {
-        [Op.or]: [{ email: login }, { nim: login }],
-      },
-    });
+    // Cari user berdasarkan email
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
-      return res.status(404).json({ message: 'Pengguna tidak ditemukan' });
+      return res.status(404).json({ message: 'Email tidak terdaftar' });
     }
 
-    // Bandingkan password dengan hash di database
+    // Bandingkan password
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Password salah' });
     }
 
-    // Buat access token JWT jika password cocok
+    // Buat access token
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
-        nim: user.nim,
-        role: user.role,
+        name: user.name,
+        departemen: user.departemen,
+        fakultas: user.fakultas,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' } // Akses token berlaku 1 jam
+      { expiresIn: '1h' } // Token berlaku 1 jam
     );
 
     // Buat refresh token
     const refreshToken = createRefreshToken(user.id);
+
+    // Simpan refresh token ke database
+    user.refresh_token = refreshToken;
+    await user.save();
 
     res.json({
       message: 'Login berhasil',
@@ -52,39 +51,56 @@ exports.login = async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        nim: user.nim,
         name: user.name,
-        role: user.role,
+        departemen: user.departemen,
+        fakultas: user.fakultas,
       },
     });
   } catch (err) {
-    console.error('Error during login:', err); // Logging error
-    res.status(500).json({ message: 'Terjadi kesalahan pada server', error: err.message });
+    console.error('Error during login:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
   }
 };
 
-// Endpoint untuk refresh token
-exports.refreshToken = (req, res) => {
+exports.refreshToken = async (req, res) => {
   const { refreshToken } = req.body;
 
   if (!refreshToken) {
     return res.status(400).json({ message: 'Refresh token diperlukan' });
   }
 
-  jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      console.error('Invalid refresh token:', err); // Logging error
+  try {
+    // Cari user berdasarkan refresh token
+    const user = await User.findOne({ where: { refresh_token: refreshToken } });
+
+    if (!user) {
       return res.status(403).json({ message: 'Refresh token tidak valid' });
     }
 
-    const newAccessToken = jwt.sign(
-      {
-        id: decoded.userId, // Menggunakan userId dari token refresh
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+    // Verifikasi refresh token
+    jwt.verify(refreshToken, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        console.error('Invalid refresh token:', err);
+        return res.status(403).json({ message: 'Refresh token tidak valid' });
+      }
 
-    res.json({ token: newAccessToken });
-  });
+      // Buat access token baru
+      const newAccessToken = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          departemen: user.departemen,
+          fakultas: user.fakultas,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      res.json({ token: newAccessToken });
+    });
+  } catch (err) {
+    console.error('Error during refresh token:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
 };

@@ -21,29 +21,17 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    nim: {
-      type: DataTypes.STRING,
-      unique: true,
-      allowNull: true,
-    },
     password: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    role: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     departemen: {
       type: DataTypes.STRING,
-      allowNull: true,
+      allowNull: false,
     },
-    hp: {
+    fakultas: {
       type: DataTypes.STRING,
-      allowNull: true,
-      validate: {
-        isNumeric: true,
-      },
+      allowNull: false,
     },
     refresh_token: {
       type: DataTypes.STRING,
@@ -51,8 +39,10 @@ const User = sequelize.define(
     },
   },
   {
+
     tableName: 'users',
     timestamps: true,  
+
   }
 );
 
