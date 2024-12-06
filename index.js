@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/authRoutes'); // Mengimpor route auth
 const classListRoutes = require('./routes/classListRoutes');
+const lecturerListRoutes = require('./routes/lecturerListRoutes');
 
 const app = express();
 
@@ -13,6 +14,13 @@ app.use('/api/auth', authRoutes);
 
 // Menggunakan rute kelas
 app.use('/api', classListRoutes);
+
+
+
+
+
+// Menggunakan rute dosen
+app.use('/api', lecturerListRoutes);
 
 
 // Middleware untuk menangani error
