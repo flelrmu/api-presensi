@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Admin } = require('../models'); // Pastikan jalur model benar
+const { Admin } = require('../models');
+const fs = require('fs');
+const path = require('path');
 
 // Membuat Refresh Token
 const createRefreshToken = (adminId) => {
@@ -102,5 +104,103 @@ exports.refreshToken = async (req, res) => {
   } catch (err) {
     console.error('Error during refresh token:', err);
     res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+// Edit Profile Controller
+exports.editProfile = async (req, res) => {
+  const { nama, email, departemen_id } = req.body;
+  const adminId = req.admin.id; // Asumsikan admin ID diambil dari token
+
+  try {
+    // Cari admin berdasarkan ID
+    const admin = await Admin.findByPk(adminId);
+
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin tidak ditemukan' });
+    }
+
+    // Perbarui data admin
+    admin.nama = nama || admin.nama;
+    admin.email = email || admin.email;
+    admin.departemen_id = departemen_id || admin.departemen_id;
+
+    // Perbarui foto profil jika ada file di-upload
+    if (req.file) {
+      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+
+      // Hapus foto profil lama jika ada
+      if (admin.foto_profile) {
+        const oldFilePath = path.join(__dirname, '..', 'uploads', admin.foto_profile);
+        if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+      }
+
+      admin.foto_profile = req.file.filename;
+    }
+
+    await admin.save();
+
+    res.json({ message: 'Profile berhasil diperbarui', admin });
+  } catch (err) {
+    console.error('Error during profile update:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+// Change Password Controller
+exports.changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const adminId = req.admin.id; // Asumsikan admin ID diambil dari token
+
+  try {
+    // Cari admin berdasarkan ID
+    const admin = await Admin.findByPk(adminId);
+
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin tidak ditemukan' });
+    }
+
+    // Periksa password saat ini
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Password saat ini salah' });
+    }
+
+    // Hash password baru
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    admin.password = hashedPassword;
+
+    await admin.save();
+
+    res.json({ message: 'Password berhasil diubah' });
+  } catch (err) {
+    console.error('Error during password change:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+};
+
+exports.authenticate = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Akses ditolak. Token tidak ditemukan.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const admin = await Admin.findByPk(decoded.id);
+
+    if (!admin) {
+      return res.status(404).json({ message: 'Admin tidak ditemukan' });
+    }
+
+    req.admin = admin; // Simpan admin di request untuk digunakan di controller
+    next();
+  } catch (err) {
+    console.error('Error during authentication:', err);
+    res.status(401).json({ message: 'Token tidak valid.' });
   }
 };
