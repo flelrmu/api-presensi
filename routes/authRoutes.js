@@ -15,10 +15,10 @@ const {
   editProfile,
   changePassword,
 } = require("../controllers/authController");
-const {
-  validateEditProfileInput,
-  validateChangePasswordInput,
-} = require("../middlewares/validationMiddleware");
+// const {
+//   validateEditProfileInput,
+//   validateChangePasswordInput,
+// } = require("../middlewares/validationMiddleware");
 
 // Rute Login
 router.post("/login", validateLoginInput, handleValidation, login);
@@ -30,7 +30,7 @@ router.put(
   "/edit-profile",
   authenticate,
   upload.single("foto_profile"),
-  validateEditProfileInput,
+  // validateEditProfileInput,
   handleValidation,
   editProfile
 );
@@ -38,7 +38,7 @@ router.put(
 router.put(
   "/change-password",
   authenticate,
-  validateChangePasswordInput,
+  // validateChangePasswordInput, 
   handleValidation,
   changePassword
 );

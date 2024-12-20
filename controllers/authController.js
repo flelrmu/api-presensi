@@ -1,8 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { Admin } = require('../models');
-const fs = require('fs');
+const fs = require('fs').promises;;
 const path = require('path');
+const sharp = require('sharp');
 
 // Membuat Refresh Token
 const createRefreshToken = (adminId) => {
@@ -110,7 +111,7 @@ exports.refreshToken = async (req, res) => {
 // Edit Profile Controller
 exports.editProfile = async (req, res) => {
   const { nama, email, departemen_id } = req.body;
-  const adminId = req.admin.id; // Asumsikan admin ID diambil dari token
+  const adminId = req.admin.admin_id; // Asumsikan admin ID diambil dari token
 
   try {
     // Cari admin berdasarkan ID
@@ -125,17 +126,41 @@ exports.editProfile = async (req, res) => {
     admin.email = email || admin.email;
     admin.departemen_id = departemen_id || admin.departemen_id;
 
-    // Perbarui foto profil jika ada file di-upload
+    // Proses foto profil jika ada file di-upload
     if (req.file) {
-      const filePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      // Generate nama file baru dengan timestamp
+      const timestamp = Date.now();
+      const newFilename = `profile_${timestamp}.jpg`;
+      const uploadPath = path.join(__dirname, '..', 'uploads');
+      const newFilePath = path.join(uploadPath, newFilename);
 
-      // Hapus foto profil lama jika ada
+      // Konversi gambar ke JPG dan simpan
+      await sharp(req.file.path)
+        .jpeg({ quality: 90 }) // kualitas 90%
+        .toFile(newFilePath);
+
+      // Tunggu sebentar sebelum menghapus file
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Hapus foto profile lama jika ada
       if (admin.foto_profile) {
-        const oldFilePath = path.join(__dirname, '..', 'uploads', admin.foto_profile);
-        if (fs.existsSync(oldFilePath)) fs.unlinkSync(oldFilePath);
+        const oldFilePath = path.join(uploadPath, admin.foto_profile);
+        try {
+          const exists = await fs.access(oldFilePath)
+            .then(() => true)
+            .catch(() => false);
+          
+          if (exists) {
+            await fs.unlink(oldFilePath);
+          }
+        } catch (oldFileError) {
+          console.warn('Warning: Could not delete old profile photo:', oldFileError.message);
+          // Lanjutkan eksekusi meskipun file lama tidak bisa dihapus
+        }
       }
 
-      admin.foto_profile = req.file.filename;
+      // Update nama file di database
+      admin.foto_profile = newFilename;
     }
 
     await admin.save();
@@ -150,7 +175,7 @@ exports.editProfile = async (req, res) => {
 // Change Password Controller
 exports.changePassword = async (req, res) => {
   const { currentPassword, newPassword } = req.body;
-  const adminId = req.admin.id; // Asumsikan admin ID diambil dari token
+  const adminId = req.admin.admin_id; // Asumsikan admin ID diambil dari token
 
   try {
     // Cari admin berdasarkan ID
