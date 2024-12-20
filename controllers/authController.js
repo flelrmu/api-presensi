@@ -1,59 +1,59 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { Admin } = require('../models'); // Pastikan jalur model benar
 
-const createRefreshToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+// Membuat Refresh Token
+const createRefreshToken = (adminId) => {
+  return jwt.sign({ adminId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
+// Login Controller
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Cari user berdasarkan email
-    const user = await User.findOne({ where: { email } });
+    // Cari admin berdasarkan email
+    const admin = await Admin.findOne({ where: { email } });
 
-    if (!user) {
-      return res.status(404).json({ message: 'Email tidak terdaftar' });
+    if (!admin) {
+      return res.status(404).json({ message: 'Email tidak ditemukan' });
     }
 
     // Bandingkan password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, admin.password);
 
     if (!isMatch) {
       return res.status(401).json({ message: 'Password salah' });
     }
 
     // Buat access token
-    const token = jwt.sign(
+    const accessToken = jwt.sign(
       {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        departemen: user.departemen,
-        fakultas: user.fakultas,
+        id: admin.admin_id,
+        email: admin.email,
+        nama: admin.nama,
+        departemen_id: admin.departemen_id,
       },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' } // Token berlaku 1 jam
+      { expiresIn: '1h' }
     );
 
     // Buat refresh token
-    const refreshToken = createRefreshToken(user.id);
+    const refreshToken = createRefreshToken(admin.admin_id);
 
     // Simpan refresh token ke database
-    user.refresh_token = refreshToken;
-    await user.save();
+    admin.refresh_token = refreshToken;
+    await admin.save();
 
     res.json({
       message: 'Login berhasil',
-      token,
+      accessToken,
       refreshToken,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        departemen: user.departemen,
-        fakultas: user.fakultas,
+      admin: {
+        id: admin.admin_id,
+        email: admin.email,
+        nama: admin.nama,
+        departemen_id: admin.departemen_id,
       },
     });
   } catch (err) {
@@ -62,6 +62,7 @@ exports.login = async (req, res) => {
   }
 };
 
+// Refresh Token Controller
 exports.refreshToken = async (req, res) => {
   const { refreshToken } = req.body;
 
@@ -70,10 +71,10 @@ exports.refreshToken = async (req, res) => {
   }
 
   try {
-    // Cari user berdasarkan refresh token
-    const user = await User.findOne({ where: { refresh_token: refreshToken } });
+    // Cari admin berdasarkan refresh token
+    const admin = await Admin.findOne({ where: { refresh_token: refreshToken } });
 
-    if (!user) {
+    if (!admin) {
       return res.status(403).json({ message: 'Refresh token tidak valid' });
     }
 
@@ -87,17 +88,16 @@ exports.refreshToken = async (req, res) => {
       // Buat access token baru
       const newAccessToken = jwt.sign(
         {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          departemen: user.departemen,
-          fakultas: user.fakultas,
+          id: admin.admin_id,
+          email: admin.email,
+          nama: admin.nama,
+          departemen_id: admin.departemen_id,
         },
         process.env.JWT_SECRET,
         { expiresIn: '1h' }
       );
 
-      res.json({ token: newAccessToken });
+      res.json({ accessToken: newAccessToken });
     });
   } catch (err) {
     console.error('Error during refresh token:', err);

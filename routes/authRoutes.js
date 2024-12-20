@@ -3,10 +3,10 @@ const router = express.Router();
 const { login, refreshToken } = require('../controllers/authController');
 const { validateLoginInput, handleValidation } = require('../middlewares/validationMiddleware');
 
-// Login route
+// Rute Login
 router.post('/login', validateLoginInput, handleValidation, login);
 
-// Refresh token route
+// Rute Refresh Token
 router.post('/refresh-token', refreshToken);
 
 module.exports = router;
