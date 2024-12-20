@@ -36,6 +36,7 @@ const models = {
 models.Departemen.hasOne(models.Admin, {
     foreignKey: 'departemen_id'
 });
+
 models.Admin.belongsTo(models.Departemen, {
     foreignKey: 'departemen_id'
 });

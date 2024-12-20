@@ -1,9 +1,20 @@
-const ClassList = require('../models/classList'); // Mengimpor model ClassList
+const { Kelas, Departemen, Dosen } = require('../models'); // Mengimpor model
 
 // Fungsi untuk melihat semua kelas
 exports.getAllClasses = async (req, res) => {
   try {
-    const classes = await ClassList.findAll();
+    const classes = await Kelas.findAll({
+      include: [
+        {
+          model: Departemen,
+          attributes: ['nama_departemen'],
+        },
+        {
+          model: Dosen,
+          attributes: ['nama_dosen', 'email'],
+        },
+      ],
+    });
     res.status(200).json(classes);
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil data kelas', error: error.message });
@@ -14,7 +25,18 @@ exports.getAllClasses = async (req, res) => {
 exports.getClassById = async (req, res) => {
   try {
     const { id } = req.params;
-    const singleClass = await ClassList.findByPk(id);
+    const singleClass = await Kelas.findByPk(id, {
+      include: [
+        {
+          model: Departemen,
+          attributes: ['nama_departemen'],
+        },
+        {
+          model: Dosen,
+          attributes: ['nama_dosen', 'email'],
+        },
+      ],
+    });
 
     if (!singleClass) {
       return res.status(404).json({ message: 'Kelas tidak ditemukan' });
@@ -27,45 +49,47 @@ exports.getClassById = async (req, res) => {
 
 // Fungsi untuk menambah kelas baru
 exports.createClass = async (req, res) => {
-    try {
-      const { class_name, class_code, lecturer } = req.body;
-  
-      if (!class_name || !class_code || !lecturer) {
-        return res.status(400).json({ message: "Semua field wajib diisi" });
-      }
-  
-      // Cek apakah kode kelas sudah ada
-      const existingClass = await ClassList.findOne({ where: { class_code } });
-      if (existingClass) {
-        return res.status(400).json({ message: "Kode kelas sudah digunakan" });
-      }
-  
-      const newClass = await ClassList.create({
-        class_name,
-        class_code,
-        lecturer,
-      });
-  
-      res.status(201).json({ message: "Kelas berhasil ditambahkan", data: newClass });
-    } catch (error) {
-      res.status(500).json({ message: "Gagal menambahkan kelas", error: error.message });
+  try {
+    const { kode_kelas, departemen_id, nip, nama_kelas, jumlah_sks, semester } = req.body;
+
+    if (!kode_kelas || !departemen_id || !nip || !nama_kelas || !jumlah_sks || !semester) {
+      return res.status(400).json({ message: 'Semua field wajib diisi' });
     }
-  };
-  
+
+    // Cek apakah kode kelas sudah ada
+    const existingClass = await Kelas.findOne({ where: { kode_kelas } });
+    if (existingClass) {
+      return res.status(400).json({ message: 'Kode kelas sudah digunakan' });
+    }
+
+    const newClass = await Kelas.create({
+      kode_kelas,
+      departemen_id,
+      nip,
+      nama_kelas,
+      jumlah_sks,
+      semester,
+    });
+
+    res.status(201).json({ message: 'Kelas berhasil ditambahkan', data: newClass });
+  } catch (error) {
+    res.status(500).json({ message: 'Gagal menambahkan kelas', error: error.message });
+  }
+};
 
 // Fungsi untuk mengedit kelas berdasarkan ID
 exports.updateClass = async (req, res) => {
   try {
     const { id } = req.params;
-    const { class_name, class_code, lecturer } = req.body;
+    const { kode_kelas, departemen_id, nip, nama_kelas, jumlah_sks, semester } = req.body;
 
-    const classToUpdate = await ClassList.findByPk(id);
+    const classToUpdate = await Kelas.findByPk(id);
 
     if (!classToUpdate) {
       return res.status(404).json({ message: 'Kelas tidak ditemukan' });
     }
 
-    await classToUpdate.update({ class_name, class_code, lecturer });
+    await classToUpdate.update({ kode_kelas, departemen_id, nip, nama_kelas, jumlah_sks, semester });
     res.status(200).json({ message: 'Kelas berhasil diperbarui', data: classToUpdate });
   } catch (error) {
     res.status(500).json({ message: 'Gagal memperbarui kelas', error: error.message });
@@ -77,15 +101,18 @@ exports.deleteClass = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Find the class by ID
     const classToDelete = await ClassList.findByPk(id);
 
     if (!classToDelete) {
-      return res.status(404).json({ message: 'Kelas tidak ditemukan' });
+      return res.status(404).json({ message: 'Class not found' });
     }
 
+    // Delete the class
     await classToDelete.destroy();
-    res.status(200).json({ message: 'Kelas berhasil dihapus' });
+    res.status(200).json({ message: 'Class successfully deleted' });
   } catch (error) {
-    res.status(500).json({ message: 'Gagal menghapus kelas', error: error.message });
+    res.status(500).json({ message: 'Failed to delete class', error: error.message });
   }
 };
+
