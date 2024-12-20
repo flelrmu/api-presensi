@@ -12,4 +12,3 @@ exports.handleValidation = (req, res, next) => {
   }
   next();
 };
-

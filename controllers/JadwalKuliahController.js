@@ -1,4 +1,4 @@
-const JadwalKuliah = require('../models/JadwalKuliah'); // Mengimpor model JadwalKuliah
+const JadwalKuliah = require('../models'); // Mengimpor model JadwalKuliah
 
 // Fungsi untuk melihat semua jadwal kuliah
 exports.getAllJadwal = async (req, res) => {
@@ -28,22 +28,23 @@ exports.getJadwalById = async (req, res) => {
 // Fungsi untuk menambah jadwal kuliah baru
 exports.createJadwal = async (req, res) => {
     try {
-      const { class_name, class_code, lecturer } = req.body;
+      const { kode_kelas, ruangan_id, hari, jam_mulai } = req.body;
   
-      if (!class_name || !class_code || !lecturer) {
+      if (!kode_kelas || !ruangan_id || !hari || !jam_mulai) {
         return res.status(400).json({ message: "Semua field wajib diisi" });
       }
   
       // Cek apakah kode jadwal kuliah sudah ada
-      const existingJadwal = await JadwalKuliah.findOne({ where: { class_code } });
+      const existingJadwal = await JadwalKuliah.findOne({ where: { kode_kelas } });
       if (existingJadwal) {
-        return res.status(400).json({ message: "Kode jadwal kuliah sudah digunakan" });
+        return res.status(400).json({ message: "Jadwal kuliah sudah dibuat" });
       }
   
       const newJadwal = await JadwalKuliah.create({
-        class_name,
-        class_code,
-        lecturer,
+        kode_kelas,
+        ruangan_id,
+        hari,
+        jam_mulai
       });
   
       res.status(201).json({ message: "Jadwal kuliah berhasil ditambahkan", data: newJadwal });
@@ -57,7 +58,7 @@ exports.createJadwal = async (req, res) => {
 exports.updateJadwal = async (req, res) => {
   try {
     const { id } = req.params;
-    const { class_name, class_code, lecturer } = req.body;
+    const { ruangan_id, hari, jam_mulai } = req.body;
 
     const jadwalToUpdate = await JadwalKuliah.findByPk(id);
 
@@ -65,7 +66,7 @@ exports.updateJadwal = async (req, res) => {
       return res.status(404).json({ message: 'Jadwal kuliah tidak ditemukan' });
     }
 
-    await jadwalToUpdate.update({ class_name, class_code, lecturer });
+    await jadwalToUpdate.update({ ruangan_id, hari, jam_mulai });
     res.status(200).json({ message: 'Jadwal kuliah berhasil diperbarui', data: jadwalToUpdate });
   } catch (error) {
     res.status(500).json({ message: 'Gagal memperbarui jadwal kuliah', error: error.message });
