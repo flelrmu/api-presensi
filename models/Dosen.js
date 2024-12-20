@@ -1,36 +1,39 @@
 const { DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-    const JadwalKuliah = sequelize.define('JadwalKuliah', {
-        jadwal_kuliah_id: {
-            type: DataTypes.INTEGER,
+    const Dosen = sequelize.define('Dosen', {
+        nip: {
+            type: DataTypes.STRING,
             primaryKey: true,
-            autoIncrement: true,
-            field: 'jadwal_kuliah_id'
+            autoIncrement: false,
+            allowNull: false,
+            unique: true,
+            field: 'nip'
         },
-        kode_kelas: {
+        departemen_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            references: {
+                model: 'departemen',
+                key: 'departemen_id'
+            }
+        },
+        nama_dosen: {
+            type: DataTypes.STRING,
+            allowNull: false
+        },
+        email: {
             type: DataTypes.STRING,
             allowNull: false,
-            references: {
-                model: 'kelas',
-                key: 'kode_kelas'
-            }
+            unique: true
         },
-        ruangan_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            references: {
-                model: 'ruangan',
-                key: 'ruang_id'
-            }
+        no_telp: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
-        hari: {
-            type: DataTypes.ENUM('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'),
-            allowNull: false
-        },
-        jam_mulai: {
-            type: DataTypes.TIME,
-            allowNull: false
+        alamat: {
+            type: DataTypes.STRING,
+            allowNull: true
         },
         created_at: {
             type: DataTypes.DATE,
@@ -43,12 +46,11 @@ module.exports = (sequelize) => {
             defaultValue: DataTypes.NOW
         }
     }, {
-        tableName: 'jadwal_kuliah',
+        tableName: 'dosen',
         timestamps: true,
         createdAt: 'created_at',
         updatedAt: 'updated_at'
     });
 
-    return JadwalKuliah;
+    return Dosen;
 };
-
