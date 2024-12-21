@@ -54,9 +54,10 @@ exports.getAllJadwal = async (req, res) => {
     res.status(200).json({
       message: 'Berhasil mengambil data jadwal kuliah',
       data: {
+        ketJadwal,
         jadwal,
-        detailJadwal,
-        ketJadwal
+        detailJadwal
+        
       }
     });
 
