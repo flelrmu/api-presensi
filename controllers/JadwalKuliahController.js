@@ -1,21 +1,64 @@
+const { where } = require('sequelize');
 const { JadwalKuliah, Kelas, Ruangan } = require('../models'); // Mengimpor model JadwalKuliah
 
 // Fungsi untuk melihat semua jadwal kuliah
 exports.getAllJadwal = async (req, res) => {
   try {
-    const jadwal = await JadwalKuliah.findAll();
+    // Tambahkan pengecekan req.admin
+    if (!req.admin || !req.admin.departemen_id) {
+      return res.status(401).json({ 
+        message: 'Unauthorized: Admin departemen ID tidak ditemukan' 
+      });
+    }
 
+    const departemen_id = req.admin.departemen_id;
+
+    const jadwal = await JadwalKuliah.findAll({
+      include: {
+        model: Kelas,
+        where: {departemen_id},
+        required: true
+      }
+    });
 
     const detailJadwal = await JadwalKuliah.findAll({
       include: [
-        { model: Kelas },
+        { model: Kelas,
+          where : { departemen_id },
+          required: true
+         },
         { model: Ruangan }
       ]
     });
 
+    const ketJadwal = detailJadwal.map(item => {
+      return {
+        jadwal_kuliah_id: item.jadwal_kuliah_id,
+        kode_kelas: item.kode_kelas,
+        nama_kelas: item.Kela?.nama_kelas || 'Tidak ada nama',
+        departemen_id: item.Kela.departemen_id,
+        jumlah_sks: item.Kela?.jumlah_sks || 0,
+        hari: item.hari,
+        jam_mulai: item.jam_mulai,
+        nama_ruangan: item.Ruangan?.nama_ruangan || 'Tidak ada ruangan'
+      };
+    });
+
+    if (!detailJadwal || detailJadwal.length === 0) {
+      return res.status(200).json({
+        message: 'Tidak ada jadwal kuliah untuk departemen ini',
+        data: []
+      });
+    }
+
     res.status(200).json({
-      jadwal,
-      detailJadwal
+      message: 'Berhasil mengambil data jadwal kuliah',
+      data: {
+        ketJadwal,
+        jadwal,
+        detailJadwal
+        
+      }
     });
 
     // res.status(200).json(detailJadwal);
@@ -23,7 +66,10 @@ exports.getAllJadwal = async (req, res) => {
     // console.log(JSON.stringify(detailJadwal, null, 2));
     
   } catch (error) {
-    res.status(500).json({ message: 'Gagal mengambil data jadwal kuliah', error: error.message });
+    res.status(500).json({ 
+      message: 'Gagal mengambil data jadwal kuliah', 
+      error: error.message 
+    });
   }
 };
 
