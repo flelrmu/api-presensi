@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Admin } = require('../models');
+const { Admin, Departemen } = require('../models');
 const fs = require('fs').promises;;
 const path = require('path');
 const sharp = require('sharp');
@@ -16,7 +16,12 @@ exports.login = async (req, res) => {
 
   try {
     // Cari admin berdasarkan email
-    const admin = await Admin.findOne({ where: { email } });
+    const admin = await Admin.findOne({ 
+      where: { email },
+      include: [
+        { model: Departemen}
+      ] 
+    });
 
     if (!admin) {
       return res.status(404).json({ message: 'Email tidak ditemukan' });
@@ -56,7 +61,10 @@ exports.login = async (req, res) => {
         id: admin.admin_id,
         email: admin.email,
         nama: admin.nama,
-        departemen_id: admin.departemen_id,
+        foto_profile: admin.foto_profile,
+        departemen_id: admin.Departemen.departemen_id,
+        nama_departemen: admin.Departemen.nama_departemen,
+        fakultas: admin.Departemen.fakultas
       },
     });
   } catch (err) {
