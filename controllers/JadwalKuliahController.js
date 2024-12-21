@@ -84,10 +84,25 @@ exports.getJadwalById = async (req, res) => {
       ]
     });
 
+    const ketJadwal = {
+        jadwal_kuliah_id: singleJadwal.jadwal_kuliah_id,
+        kode_kelas: singleJadwal.kode_kelas,
+        nama_kelas: singleJadwal.Kela?.nama_kelas || 'Tidak ada nama',
+        departemen_id: singleJadwal.Kela.departemen_id,
+        jumlah_sks: singleJadwal.Kela?.jumlah_sks || 0,
+        hari: singleJadwal.hari,
+        jam_mulai: singleJadwal.jam_mulai,
+        nama_ruangan: singleJadwal.Ruangan?.nama_ruangan || 'Tidak ada ruangan'
+      };
+
+
     if (!singleJadwal) {
       return res.status(404).json({ message: 'Jadwal kuliah tidak ditemukan' });
     }
-    res.status(200).json(singleJadwal);
+    res.status(200).json({
+      ketJadwal,
+      singleJadwal    
+    });
   } catch (error) {
     res.status(500).json({ message: 'Gagal mengambil data jadwal kuliah', error: error.message });
   }

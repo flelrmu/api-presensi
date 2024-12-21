@@ -229,3 +229,31 @@ exports.authenticate = async (req, res, next) => {
     res.status(401).json({ message: 'Token tidak valid.' });
   }
 };
+
+
+// Logout Controller
+exports.logout = async (req, res) => {
+  const { refresh_token } = req.body;
+
+  if (!refresh_token) {
+    return res.status(400).json({ message: 'Refresh token diperlukan' });
+  }
+
+  try {
+    // Cari admin berdasarkan refresh token
+    const admin = await Admin.findOne({ where: { refresh_token: refresh_token } });
+
+    if (!admin) {
+      return res.status(403).json({ message: 'Refresh token tidak valid' });
+    }
+
+    // Hapus refresh token di database
+    admin.refresh_token = null;
+    await admin.save();
+
+    res.status(200).json({ message: 'Logout berhasil' });
+  } catch (err) {
+    console.error('Error during logout:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
+  }
+};
