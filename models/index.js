@@ -68,6 +68,7 @@ models.Kelas.belongsTo(models.Dosen, {
 models.Kelas.hasMany(models.JadwalKuliah, {
     foreignKey: 'kode_kelas',
     onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
 });
 models.JadwalKuliah.belongsTo(models.Kelas, {
     foreignKey: 'kode_kelas'
@@ -85,6 +86,7 @@ models.JadwalKuliah.hasMany(models.Presensi, {
     foreignKey: 'jadwal_kuliah_id',
     onDelete: 'CASCADE',
 });
+
 models.Presensi.belongsTo(models.JadwalKuliah, {
     foreignKey: 'jadwal_kuliah_id'
 });

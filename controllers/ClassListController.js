@@ -102,7 +102,7 @@ exports.deleteClass = async (req, res) => {
     const { id } = req.params;
 
     // Find the class by ID
-    const classToDelete = await ClassList.findByPk(id);
+    const classToDelete = await Kelas.findByPk(id);
 
     if (!classToDelete) {
       return res.status(404).json({ message: 'Class not found' });
