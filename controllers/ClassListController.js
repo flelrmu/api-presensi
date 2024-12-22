@@ -3,11 +3,21 @@ const { Kelas, Departemen, Dosen } = require('../models'); // Mengimpor model
 // Fungsi untuk melihat semua kelas
 exports.getAllClasses = async (req, res) => {
   try {
+    if (!req.admin || !req.admin.departemen_id) {
+      return res.status(401).json({ 
+        message: 'Unauthorized: Admin departemen ID tidak ditemukan' 
+      });
+    }
+
+    const departemen_id = req.admin.departemen_id;
+
     const classes = await Kelas.findAll({
       include: [
         {
           model: Departemen,
           attributes: ['nama_departemen'],
+          where : { departemen_id },
+          required: true
         },
         {
           model: Dosen,
