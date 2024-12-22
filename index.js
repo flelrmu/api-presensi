@@ -5,6 +5,7 @@ const classListRoutes = require('./routes/classListRoutes');
 const lecturerRoutes = require('./routes/lecturerRoutes');
 const jadwalRouter = require('./routes/jadwalRoutes');
 const dosenRouter = require('./routes/dosenRoutes');
+const getDepartemen  =require('./controllers/authController');
 
 const app = express();
 
@@ -23,6 +24,8 @@ app.use('/api', lecturerRoutes)
 app.use('/api', jadwalRouter);
 
 app.use('/api', dosenRouter);
+
+app.get('/api/departemen', getDepartemen.getDepartemen);
 
 // Middleware untuk menangani error
 app.use((err, req, res, next) => {
