@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { Admin } = require('../models');
+const { Admin, Departemen } = require('../models');
 const fs = require('fs').promises;;
 const path = require('path');
 const sharp = require('sharp');
@@ -16,7 +16,12 @@ exports.login = async (req, res) => {
 
   try {
     // Cari admin berdasarkan email
-    const admin = await Admin.findOne({ where: { email } });
+    const admin = await Admin.findOne({ 
+      where: { email },
+      include: [
+        { model: Departemen}
+      ] 
+    });
 
     if (!admin) {
       return res.status(404).json({ message: 'Email tidak ditemukan' });
@@ -56,7 +61,10 @@ exports.login = async (req, res) => {
         id: admin.admin_id,
         email: admin.email,
         nama: admin.nama,
-        departemen_id: admin.departemen_id,
+        foto_profile: admin.foto_profile,
+        departemen_id: admin.Departemen.departemen_id,
+        nama_departemen: admin.Departemen.nama_departemen,
+        fakultas: admin.Departemen.fakultas
       },
     });
   } catch (err) {
@@ -227,5 +235,33 @@ exports.authenticate = async (req, res, next) => {
   } catch (err) {
     console.error('Error during authentication:', err);
     res.status(401).json({ message: 'Token tidak valid.' });
+  }
+};
+
+
+// Logout Controller
+exports.logout = async (req, res) => {
+  const { refresh_token } = req.body;
+
+  if (!refresh_token) {
+    return res.status(400).json({ message: 'Refresh token diperlukan' });
+  }
+
+  try {
+    // Cari admin berdasarkan refresh token
+    const admin = await Admin.findOne({ where: { refresh_token: refresh_token } });
+
+    if (!admin) {
+      return res.status(403).json({ message: 'Refresh token tidak valid' });
+    }
+
+    // Hapus refresh token di database
+    admin.refresh_token = null;
+    await admin.save();
+
+    res.status(200).json({ message: 'Logout berhasil' });
+  } catch (err) {
+    console.error('Error during logout:', err);
+    res.status(500).json({ message: 'Terjadi kesalahan pada server' });
   }
 };

@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const authRoutes = require('./routes/authRoutes');
 const classListRoutes = require('./routes/classListRoutes');
 const jadwalRouter = require('./routes/jadwalRoutes');
-const lecturerRoutes = require('./routes/lecturerRoutes');
 
 const app = express();
 
@@ -16,11 +15,8 @@ app.use('/api/auth', authRoutes);
 // Menggunakan rute kelas
 app.use('/api', classListRoutes);
 
-
 // Menggunakan rute jadwal kuliah
 app.use('/api', jadwalRouter);
-
-app.use('/api', lecturerRoutes);
 
 // Middleware untuk menangani error
 app.use((err, req, res, next) => {

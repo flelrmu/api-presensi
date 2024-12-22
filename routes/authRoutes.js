@@ -4,6 +4,7 @@ const {
   login,
   refreshToken,
   authenticate,
+  logout
 } = require("../controllers/authController");
 const {
   validateLoginInput,
@@ -42,5 +43,9 @@ router.put(
   handleValidation,
   changePassword
 );
+
+// Rute Logout
+router.post("/logout", logout);
+
 
 module.exports = router;
