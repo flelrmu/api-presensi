@@ -265,3 +265,18 @@ exports.logout = async (req, res) => {
     res.status(500).json({ message: 'Terjadi kesalahan pada server' });
   }
 };
+
+
+exports.getDepartemen = async (req, res) => {
+  try {
+    const departemen = await Departemen.findAll()
+
+    res.status(200).json(departemen);
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Gagal mengambil data departemen', 
+      error: error.message 
+    });
+  }
+}
