@@ -25,4 +25,6 @@ router.put('/classes/:id', authenticate, classListController.updateClass);
 // Rute untuk menghapus kelas berdasarkan ID
 router.delete('/classes/:id', authenticate, classListController.deleteClass);
 
+router.get('/presensi', authenticate, classListController.getAllPresensiByDepartemen);
+
 module.exports = router;
