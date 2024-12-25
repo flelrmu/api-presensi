@@ -154,7 +154,7 @@ exports.createJadwal = async (req, res) => {
       if (conflictingSchedule) {
         return res.status(400).json({ 
           message: "Jadwal bentrok! Ruangan sudah digunakan pada hari dan jam yang sama",
-          conflicting_schedule: conflictingSchedule
+          data: conflictingSchedule
         });
       }
   
@@ -164,6 +164,8 @@ exports.createJadwal = async (req, res) => {
         hari,
         jam_mulai
       });
+
+      console.log("Jadwal kuliah berhasil ditambahkan", newJadwal);
   
       res.status(201).json({ message: "Jadwal kuliah berhasil ditambahkan", data: newJadwal });
     } catch (error) {
