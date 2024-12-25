@@ -1,13 +1,23 @@
-const { Dosen, Departemen, Kelas } = require('../models');
+const { Dosen, Departemen, Kelas, Presensi, JadwalKuliah } = require('../models');
 
 // Fungsi untuk melihat semua dosen
 exports.getAllDosen = async (req, res) => {
   try {
+    if (!req.admin || !req.admin.departemen_id) {
+      return res.status(401).json({ 
+        message: 'Unauthorized: Admin departemen ID tidak ditemukan' 
+      });
+    }
+
+    const departemen_id = req.admin.departemen_id;
+
     const dosen = await Dosen.findAll({
       include: [
         {
           model: Departemen,
-          attributes: ['nama_departemen']
+          attributes: ['nama_departemen'],
+          where: { departemen_id },
+          required: true
         },
         {
           model: Kelas,
@@ -25,11 +35,23 @@ exports.getAllDosen = async (req, res) => {
 exports.getDosenByNip = async (req, res) => {
   try {
     const { nip } = req.params;
-    const singleDosen = await Dosen.findByPk(nip, {
+    
+    if (!req.admin || !req.admin.departemen_id) {
+      return res.status(401).json({ 
+        message: 'Unauthorized: Admin departemen ID tidak ditemukan' 
+      });
+    }
+
+    const departemen_id = req.admin.departemen_id;
+
+    const singleDosen = await Dosen.findOne({
+      where: { nip },
       include: [
         {
           model: Departemen,
-          attributes: ['nama_departemen']
+          attributes: ['nama_departemen'],
+          where: { departemen_id },
+          required: true
         },
         {
           model: Kelas,
@@ -50,12 +72,18 @@ exports.getDosenByNip = async (req, res) => {
 // Fungsi untuk menambah dosen baru
 exports.createDosen = async (req, res) => {
   try {
-    const { nip, departemen_id, nama_dosen, email, no_telp, alamat } = req.body;
+    const { nip, nama_dosen, email, no_telp, alamat } = req.body;
 
-    if (!nip || !departemen_id || !nama_dosen || !email) {
+    if (!nip || !nama_dosen || !email) {
       return res.status(400).json({ 
-        message: "NIP, departemen, nama dosen, dan email wajib diisi" 
+        message: "NIP, nama dosen, dan email wajib diisi" 
       });
+    }
+
+    // Ambil departemen_id dari admin yang sedang login
+    const departemen_id = req.admin.departemen_id;
+    if (!departemen_id) {
+      return res.status(401).json({ message: 'Unauthorized: Admin departemen ID tidak ditemukan' });
     }
 
     // Cek apakah NIP sudah ada
@@ -98,9 +126,22 @@ exports.createDosen = async (req, res) => {
 exports.updateDosen = async (req, res) => {
   try {
     const { nip } = req.params;
-    const { departemen_id, nama_dosen, email, no_telp, alamat } = req.body;
+    const { nama_dosen, email, no_telp, alamat } = req.body;
 
-    const dosenToUpdate = await Dosen.findByPk(nip);
+    // Ambil departemen_id dari admin yang sedang login
+    const departemen_id = req.admin.departemen_id;
+    if (!departemen_id) {
+      return res.status(401).json({ message: 'Unauthorized: Admin departemen ID tidak ditemukan' });
+    }
+
+    const dosenToUpdate = await Dosen.findOne({
+      where: { nip },
+      include: [{
+        model: Departemen,
+        where: { departemen_id },
+        required: true
+      }]
+    });
 
     if (!dosenToUpdate) {
       return res.status(404).json({ message: 'Dosen tidak ditemukan' });
@@ -121,7 +162,6 @@ exports.updateDosen = async (req, res) => {
     }
 
     await dosenToUpdate.update({
-      departemen_id,
       nama_dosen,
       email,
       no_telp,
@@ -142,7 +182,20 @@ exports.deleteDosen = async (req, res) => {
   try {
     const { nip } = req.params;
 
-    const dosenToDelete = await Dosen.findByPk(nip);
+    // Ambil departemen_id dari admin yang sedang login
+    const departemen_id = req.admin.departemen_id;
+    if (!departemen_id) {
+      return res.status(401).json({ message: 'Unauthorized: Admin departemen ID tidak ditemukan' });
+    }
+
+    const dosenToDelete = await Dosen.findOne({
+      where: { nip },
+      include: [{
+        model: Departemen,
+        where: { departemen_id },
+        required: true
+      }]
+    });
 
     if (!dosenToDelete) {
       return res.status(404).json({ message: 'Dosen tidak ditemukan' });
@@ -160,5 +213,56 @@ exports.deleteDosen = async (req, res) => {
     res.status(200).json({ message: 'Data dosen berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus data dosen', error: error.message });
+  }
+};
+
+// Fungsi untuk mendapatkan semua presensi berdasarkan departemen
+exports.getAllPresensiByDepartemen = async (req, res) => {
+  try {
+    if (!req.admin || !req.admin.departemen_id) {
+      return res.status(401).json({ 
+        message: 'Unauthorized: Admin departemen ID tidak ditemukan' 
+      });
+    }
+
+    const departemen_id = req.admin.departemen_id;
+
+    const presensiData = await Presensi.findAll({
+      include: [
+        {
+          model: JadwalKuliah,
+          attributes: ['jadwal_kuliah_id', 'hari', 'jam_mulai'],
+          include: [
+            {
+              model: Kelas,
+              attributes: ['kode_kelas', 'nama_kelas'],
+              include: [
+                {
+                  model: Departemen,
+                  attributes: ['nama_departemen'],
+                  where: { departemen_id },
+                },
+                {
+                  model: Dosen,
+                  attributes: ['nip', 'nama_dosen', 'email']
+                }
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (presensiData.length === 0) {
+      return res.status(404).json({ message: 'Data presensi tidak ditemukan untuk departemen ini' });
+    }
+
+    res.status(200).json(presensiData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ 
+      message: 'Gagal mengambil data presensi', 
+      error: error.message 
+    });
   }
 };
