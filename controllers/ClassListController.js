@@ -1,4 +1,4 @@
-const { Kelas, Departemen, Dosen, Presensi, JadwalKuliah } = require('../models'); // Mengimpor model
+const { Kelas, Departemen, Dosen, Presensi, JadwalKuliah, sequelize } = require('../models'); // Mengimpor model
 
 // Fungsi untuk melihat semua kelas
 exports.getAllClasses = async (req, res) => {
@@ -141,8 +141,8 @@ exports.deleteClass = async (req, res) => {
 exports.getAllPresensiByDepartemen = async (req, res) => {
   try {
       if (!req.admin || !req.admin.departemen_id) {
-          return res.status(401).json({ 
-              message: 'Unauthorized: Admin departemen ID tidak ditemukan' 
+          return res.status(401).json({
+              message: 'Unauthorized: Admin departemen ID tidak ditemukan'
           });
       }
 
@@ -163,6 +163,10 @@ exports.getAllPresensiByDepartemen = async (req, res) => {
                                   attributes: ['nama_departemen'],
                                   where: { departemen_id },
                               },
+                              {
+                                  model: Dosen,
+                                  attributes: ['nip', 'nama_dosen'], // Tambahkan atribut dosen
+                              },
                           ],
                       },
                   ],
@@ -177,9 +181,61 @@ exports.getAllPresensiByDepartemen = async (req, res) => {
       res.status(200).json(presensiData);
   } catch (error) {
       console.error(error);
-      res.status(500).json({ 
-          message: 'Gagal mengambil data presensi', 
+      res.status(500).json({
+          message: 'Gagal mengambil data presensi',
           error: error.message,
       });
+  }
+};
+
+exports.getAllPertemuan = async (req, res) => {
+  try {
+    // Validasi admin dan departemen ID
+    if (!req.admin || !req.admin.departemen_id) {
+      return res.status(401).json({
+        message: 'Unauthorized: Admin departemen ID tidak ditemukan',
+      });
+    }
+
+    const departemen_id = req.admin.departemen_id;
+
+    // Ambil data kode kelas, hari, dan total pertemuan
+    const pertemuanData = await JadwalKuliah.findAll({
+      attributes: ['kode_kelas', 'hari'], // Ambil kode kelas dan hari dari jadwal kuliah
+      include: [
+        {
+          model: Kelas,
+          attributes: [], // Tidak perlu data tambahan dari kelas
+          required: true, // Pastikan hanya kelas yang sesuai dengan filter diambil
+          include: [
+            {
+              model: Departemen,
+              attributes: [], // Tidak perlu data tambahan dari departemen
+              where: { departemen_id }, // Filter berdasarkan departemen admin
+              required: true, // Pastikan hanya data departemen yang sesuai diambil
+            },
+          ],
+        },
+        {
+          model: Presensi,
+          attributes: [
+            [sequelize.fn('SUM', sequelize.col('pertemuan')), 'total_pertemuan'],
+          ], // Hitung total pertemuan
+        },
+      ],
+      group: ['JadwalKuliah.kode_kelas', 'JadwalKuliah.hari'], // Grupkan berdasarkan kode kelas dan hari
+    });
+
+    if (!pertemuanData || pertemuanData.length === 0) {
+      return res.status(404).json({ message: 'Data pertemuan tidak ditemukan' });
+    }
+
+    res.status(200).json(pertemuanData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Gagal mengambil data pertemuan',
+      error: error.message,
+    });
   }
 };

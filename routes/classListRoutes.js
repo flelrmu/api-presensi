@@ -27,4 +27,6 @@ router.delete('/classes/:id', authenticate, classListController.deleteClass);
 
 router.get('/presensi', authenticate, classListController.getAllPresensiByDepartemen);
 
+router.get('/pertemuan', authenticate, classListController.getAllPertemuan);
+
 module.exports = router;
