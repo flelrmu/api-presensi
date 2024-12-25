@@ -13,15 +13,15 @@ exports.getAllJadwal = async (req, res) => {
 
     const departemen_id = req.admin.departemen_id;
 
-    const jadwal = await JadwalKuliah.findAll({
-      include: {
-        model: Kelas,
-        where: {departemen_id},
-        required: true
-      }
-    });
+    // const jadwal = await JadwalKuliah.findAll({
+    //   include: {
+    //     model: Kelas,
+    //     where: {departemen_id},
+    //     required: true
+    //   }
+    // });
 
-    const detailJadwal = await JadwalKuliah.findAll({
+    const jadwal = await JadwalKuliah.findAll({
       include: [
         { model: Kelas,
           where : { departemen_id },
@@ -31,20 +31,20 @@ exports.getAllJadwal = async (req, res) => {
       ]
     });
 
-    const ketJadwal = detailJadwal.map(item => {
-      return {
-        jadwal_kuliah_id: item.jadwal_kuliah_id,
-        kode_kelas: item.kode_kelas,
-        nama_kelas: item.Kela?.nama_kelas || 'Tidak ada nama',
-        departemen_id: item.Kela.departemen_id,
-        jumlah_sks: item.Kela?.jumlah_sks || 0,
-        hari: item.hari,
-        jam_mulai: item.jam_mulai,
-        nama_ruangan: item.Ruangan?.nama_ruangan || 'Tidak ada ruangan'
-      };
-    });
+    // const ketJadwal = detailJadwal.map(item => {
+    //   return {
+    //     jadwal_kuliah_id: item.jadwal_kuliah_id,
+    //     kode_kelas: item.kode_kelas,
+    //     nama_kelas: item.Kela?.nama_kelas || 'Tidak ada nama',
+    //     departemen_id: item.Kela.departemen_id,
+    //     jumlah_sks: item.Kela?.jumlah_sks || 0,
+    //     hari: item.hari,
+    //     jam_mulai: item.jam_mulai,
+    //     nama_ruangan: item.Ruangan?.nama_ruangan || 'Tidak ada ruangan'
+    //   };
+    // });
 
-    if (!detailJadwal || detailJadwal.length === 0) {
+    if (!jadwal || jadwal.length === 0) {
       return res.status(200).json({
         message: 'Tidak ada jadwal kuliah untuk departemen ini',
         data: []
@@ -53,12 +53,12 @@ exports.getAllJadwal = async (req, res) => {
 
     res.status(200).json({
       message: 'Berhasil mengambil data jadwal kuliah',
-      data: {
-        ketJadwal,
-        jadwal,
-        detailJadwal
-        
-      }
+      // data: {
+      //   ketJadwal,
+      //   jadwal,
+      //   detailJadwal
+      // }
+      jadwal
     });
 
     // res.status(200).json(detailJadwal);
