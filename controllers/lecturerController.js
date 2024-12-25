@@ -12,7 +12,7 @@ exports.getAllLecturersByAdminDepartemen = async (req, res) => {
     const departemen_id = req.admin.departemen_id;
 
     const lecturers = await Dosen.findAll({
-      attributes: ['nama_dosen', 'email'],
+      attributes: ['nip', 'nama_dosen', 'email'],
       include: [
         {
           model: Departemen,
