@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const authRoutes = require('./routes/authRoutes');
 const classListRoutes = require('./routes/classListRoutes');
+const dosenListRoutes = require('./routes/dosenRoutes');
 const lecturerRoutes = require('./routes/lecturerRoutes');
 const jadwalRouter = require('./routes/jadwalRoutes');
 
@@ -15,6 +16,9 @@ app.use('/api/auth', authRoutes);
 
 // Menggunakan rute kelas
 app.use('/api', classListRoutes);
+
+// Menggunakan rute dosen
+app.use('/api', dosenRoutes);
 
 app.use('/api', lecturerRoutes)
 
