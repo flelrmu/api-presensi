@@ -1,5 +1,24 @@
 const { where } = require('sequelize');
+const { Op } = require('sequelize');
 const { JadwalKuliah, Kelas, Ruangan } = require('../models'); // Mengimpor model JadwalKuliah
+
+exports.getAllRuangan = async (req, res) => {
+  try {
+    
+    const ruangan = await Ruangan.findAll()
+
+    res.status(200).json({
+      message: 'Berhasil mengambil data ruangan',
+      data: ruangan
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Gagal mengambil data departemen', 
+      error: error.message 
+    });
+  }
+}
 
 // Fungsi untuk melihat semua jadwal kuliah
 exports.getAllJadwal = async (req, res) => {
@@ -159,32 +178,78 @@ exports.updateJadwal = async (req, res) => {
     const { id } = req.params;
     const { ruangan_id, hari, jam_mulai } = req.body;
 
-    const jadwalToUpdate = await JadwalKuliah.findByPk(id);
-
-    if (!jadwalToUpdate) {
-      return res.status(404).json({ message: 'Jadwal kuliah tidak ditemukan' });
+    // Validasi input
+    if (!ruangan_id || !hari || !jam_mulai) {
+      return res.status(400).json({ 
+        message: 'Semua field (ruangan_id, hari, jam_mulai) harus diisi' 
+      });
     }
 
-    // Cek jadwal bentrok di ruangan yang sama
+    // Cek apakah jadwal exists
+    const jadwalToUpdate = await JadwalKuliah.findByPk(id);
+    if (!jadwalToUpdate) {
+      return res.status(404).json({ 
+        message: 'Jadwal kuliah tidak ditemukan' 
+      });
+    }
+
+    // Cek apakah ruangan exists
+    const ruangan = await Ruangan.findByPk(ruangan_id);
+    if (!ruangan) {
+      return res.status(404).json({ 
+        message: 'Ruangan tidak ditemukan' 
+      });
+    }
+
+    // Cek jadwal bentrok, kecuali dengan jadwal yang sedang diupdate
     const conflictingSchedule = await JadwalKuliah.findOne({
       where: {
         ruangan_id: ruangan_id,
         hari: hari,
-        jam_mulai: jam_mulai
+        jam_mulai: jam_mulai,
+        jadwal_kuliah_id: { 
+          [Op.ne]: id  // Mengabaikan jadwal yang sedang diupdate
+        }
       }
     });
 
     if (conflictingSchedule) {
+      console.log('Jadwal bentrok! Ruangan sudah digunakan pada hari dan jam yang sama', conflictingSchedule)
       return res.status(400).json({ 
-        message: "Jadwal bentrok! Ruangan sudah digunakan pada hari dan jam yang sama",
-        conflicting_schedule: conflictingSchedule
+        message: "Jadwal bentrok! Ruangan sudah digunakan pada hari dan jam yang sama"
       });
     }
 
-    await jadwalToUpdate.update({ ruangan_id, hari, jam_mulai });
-    res.status(200).json({ message: 'Jadwal kuliah berhasil diperbarui', data: jadwalToUpdate });
+    // Update jadwal
+    const updatedJadwal = await jadwalToUpdate.update({ 
+      ruangan_id, 
+      hari, 
+      jam_mulai 
+    });
+
+    // Ambil data jadwal yang sudah diupdate dengan relasi
+    const result = await JadwalKuliah.findByPk(id, {
+      include: [
+        { model: Kelas },
+        { model: Ruangan }
+      ]
+    });
+
+    console.log('Update data received:', { id, ruangan_id, hari, jam_mulai });
+
+    res.status(200).json({ 
+      message: 'Jadwal kuliah berhasil diperbarui', 
+      data: result 
+    });
+
+    
+
   } catch (error) {
-    res.status(500).json({ message: 'Gagal memperbarui jadwal kuliah', error: error.message });
+    console.error('Error updating jadwal:', error);
+    res.status(500).json({ 
+      message: 'Gagal memperbarui jadwal kuliah', 
+      error: error.message 
+    });
   }
 };
 
@@ -200,6 +265,7 @@ exports.deleteJadwal = async (req, res) => {
     }
 
     await jadwalToDelete.destroy();
+    console.log('Jadwal kuliah berhasil dihapus');
     res.status(200).json({ message: 'Jadwal kuliah berhasil dihapus' });
   } catch (error) {
     res.status(500).json({ message: 'Gagal menghapus jadwal kuliah', error: error.message });
